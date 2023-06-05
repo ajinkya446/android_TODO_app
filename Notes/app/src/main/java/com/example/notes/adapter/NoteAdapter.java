@@ -12,6 +12,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.Filter;
+import android.widget.Filterable;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -27,10 +29,12 @@ import com.example.notes.storage.Database;
 
 import java.util.ArrayList;
 
-public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder> {
+public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder> implements Filterable {
     private final ArrayList<String> color;
     private final ArrayList<String> title;
     private final ArrayList<String> creationTime;
+    ArrayList<String> tempList = new ArrayList<>();
+
     private final Context context;
 
 
@@ -39,6 +43,7 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
         this.creationTime = creationTime;
         this.title = title;
         this.context = context;
+        tempList=title;
     }
 
     @NonNull
@@ -51,7 +56,7 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
 
     @Override
     public void onBindViewHolder(@NonNull NoteViewHolder holder, int position) {
-        holder.title.setText(String.valueOf(title.get(position)));
+        holder.title.setText(String.valueOf(tempList.get(position)));
         holder.createTime.setText(String.valueOf(creationTime.get(position)));
         String value = String.valueOf(color.get(position));
         String substring = value.substring(1, value.length());
@@ -69,7 +74,10 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
             dialog.setContentView(R.layout.alert_dialog_layout);
             dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
             Button buttonClose = dialog.findViewById(R.id.buttonClose);
-            Boolean status = holder.db.deleteNote(String.valueOf(title.get(position)));
+            TextView textMessage = dialog.findViewById(R.id.textDelete);
+            textMessage.setText("Deleted Note item successfully");
+            Boolean status = holder.db.deleteNote(String.valueOf(tempList.get(position)));
+            Cursor cursor = holder.db.getAllValues();
             buttonClose.setOnClickListener(v1 -> {
                 if (status) {
                     Toast.makeText(context, "Deleted Note item", Toast.LENGTH_SHORT).show();
@@ -77,7 +85,6 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
                     Toast.makeText(context, "something went wrong", Toast.LENGTH_SHORT).show();
                 }
 
-                Cursor cursor = holder.db.getAllValues();
                 Singleton.detailsText.setVisibility(cursor.getCount() == 0 ? View.VISIBLE : View.GONE);
                 Singleton.searchBar.setVisibility(cursor.getCount() >= 0 ? View.VISIBLE : View.GONE);
                 Singleton.recyclerView.setAdapter(holder.db.insertNote(Singleton.mainContext, title, color, creationTime));
@@ -85,7 +92,7 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
                 Singleton.recyclerView.setVisibility(cursor.getCount() == 0 ? View.GONE : View.VISIBLE);
                 Singleton.recyclerView.setNestedScrollingEnabled(true);
                 color.remove(position);
-                title.remove(position);
+                tempList.remove(position);
                 creationTime.remove(position);
                 notifyDataSetChanged();
                 dialog.dismiss();
@@ -97,8 +104,42 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
 
     @Override
     public int getItemCount() {
-        return title.size();
+        return tempList.size();
     }
+
+    @Override
+    public Filter getFilter() {
+        return newNotesFilter;
+    }
+
+    private final Filter newNotesFilter = new Filter() {
+
+        @Override
+        protected FilterResults performFiltering(CharSequence constraint) {
+            ArrayList<String> filteredList = new ArrayList<>();
+            if (constraint == null || constraint.length() == 0) {
+                filteredList.addAll(title);
+            } else {
+                String newFilteredItem = constraint.toString().toLowerCase().trim();
+                for (String filterDetails : title) {
+                    if (filterDetails.toLowerCase().contains(newFilteredItem)) {
+                        filteredList.add(filterDetails);
+                    }
+                }
+            }
+            FilterResults result = new FilterResults();
+            result.values = filteredList;
+            result.count = filteredList.size();
+            return result;
+        }
+
+        @Override
+        protected void publishResults(CharSequence constraint, FilterResults results) {
+            tempList.clear();
+            tempList.addAll((ArrayList<String>) results.values);
+            notifyDataSetChanged();
+        }
+    };
 
     public class NoteViewHolder extends RecyclerView.ViewHolder {
         TextView title, createTime;

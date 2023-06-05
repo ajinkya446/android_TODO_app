@@ -1,14 +1,17 @@
 package com.example.notes;
 
 import android.annotation.SuppressLint;
+import android.app.Dialog;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -47,38 +50,48 @@ public class AddNoteActivity extends AppCompatActivity {
                 color = new ArrayList<String>();
                 title = new ArrayList<String>();
                 creationTime = new ArrayList<String>();
-                Boolean status = db.insertNote(titleEditText.getText().toString());
-                if (status) {
-                    Toast.makeText(this, "Notes added successfully", Toast.LENGTH_SHORT).show();
-                    titleEditText.setText("");
+                Dialog dialog = new Dialog(this);
+                dialog.setContentView(R.layout.alert_dialog_layout);
+                dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+                Button buttonClose = dialog.findViewById(R.id.buttonClose);
+                TextView textMessage = dialog.findViewById(R.id.textDelete);
+                textMessage.setText("Note Added successfully");
+                buttonClose.setOnClickListener(v1 -> {
+                    Boolean status = db.insertNote(titleEditText.getText().toString());
+                    if (status) {
+                        Toast.makeText(this, "Notes added successfully", Toast.LENGTH_SHORT).show();
+                        titleEditText.setText("");
 
-                    Cursor cursor = db.getAllValues();
-                    if (cursor.getCount() == 0) {
-                        Toast.makeText(this, "No Data available", Toast.LENGTH_SHORT).show();
-                    } else {
-                        while (cursor.moveToNext()) {
-                            title.add(cursor.getString(1));
-                            creationTime.add(cursor.getString(2).substring(0, cursor.getString(2).length() - 4));
-                            color.add(cursor.getString(3));
+                        Cursor cursor = db.getAllValues();
+                        if (cursor.getCount() == 0) {
+                            Toast.makeText(this, "No Data available", Toast.LENGTH_SHORT).show();
+                        } else {
+                            while (cursor.moveToNext()) {
+                                title.add(cursor.getString(1));
+                                creationTime.add(cursor.getString(2).substring(0, cursor.getString(2).length() - 4));
+                                color.add(cursor.getString(3));
+                            }
+                            Log.d("Log", title.toString());
+                            NoteAdapter noteAdapter = db.insertNote(Singleton.mainContext, title, color, creationTime);
+                            Singleton.recyclerView.setAdapter(noteAdapter);
+                            Singleton.recyclerView.setLayoutManager(new LinearLayoutManager(Singleton.mainContext));
+                            Singleton.recyclerView.setVisibility(cursor.getCount() == 0 ? View.GONE : View.VISIBLE);
+                            Singleton.recyclerView.setNestedScrollingEnabled(true);
                         }
-                        Log.d("Log", title.toString());
-                        NoteAdapter noteAdapter = db.insertNote(Singleton.mainContext, title, color, creationTime);
-                        Singleton.recyclerView.setAdapter(noteAdapter);
-                        Singleton.recyclerView.setLayoutManager(new LinearLayoutManager(Singleton.mainContext));
-                        Singleton.recyclerView.setVisibility(cursor.getCount() == 0 ? View.GONE : View.VISIBLE);
-                        Singleton.recyclerView.setNestedScrollingEnabled(true);
-                    }
 
-                    Singleton.detailsText.setVisibility(cursor.getCount() == 0 ? View.VISIBLE : View.GONE);
-                    Singleton.searchBar.setVisibility(cursor.getCount() >= 0 ? View.VISIBLE : View.GONE);
-                } else {
-                    View parentLayout = findViewById(android.R.id.content);
-                    Snackbar snackbar = Snackbar.make(parentLayout, "Error Occurred", Snackbar.LENGTH_LONG);
-                    snackbar.getView().setBackgroundColor(Color.parseColor("#1eb2a6"));
-                    snackbar.setTextColor(Color.parseColor("#FFFFFF"))
-                            .show();
-                    titleEditText.setText("");
-                }
+                        Singleton.detailsText.setVisibility(cursor.getCount() == 0 ? View.VISIBLE : View.GONE);
+                        Singleton.searchBar.setVisibility(cursor.getCount() >= 0 ? View.VISIBLE : View.GONE);
+                    } else {
+                        View parentLayout = findViewById(android.R.id.content);
+                        Snackbar snackbar = Snackbar.make(parentLayout, "Error Occurred", Snackbar.LENGTH_LONG);
+                        snackbar.getView().setBackgroundColor(Color.parseColor("#1eb2a6"));
+                        snackbar.setTextColor(Color.parseColor("#FFFFFF"))
+                                .show();
+                        titleEditText.setText("");
+                    }
+                    dialog.dismiss();
+                });
+                dialog.show();
             }
         });
 

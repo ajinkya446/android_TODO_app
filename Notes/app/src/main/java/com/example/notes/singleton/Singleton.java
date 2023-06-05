@@ -6,6 +6,8 @@ import android.widget.TextView;
 
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.util.ArrayList;
+
 public class Singleton {
     // private static instance variable to hold the singleton instance
     private static volatile Singleton INSTANCE = null;
@@ -15,6 +17,7 @@ public class Singleton {
     public static RecyclerView recyclerView;
     public static TextView detailsText;
     public static EditText searchBar;
+    public static ArrayList<String> titleTempArray;
 
 
     public void setMainContext(final Context context) {
@@ -31,6 +34,9 @@ public class Singleton {
 
     public void setTextView(TextView textView) {
         detailsText = textView;
+    }
+    public void setTitleTempArray(ArrayList<String> list) {
+        titleTempArray = list;
     }
 
     // private constructor to prevent instantiation of the class
